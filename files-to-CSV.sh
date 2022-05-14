@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 # Set custom variables here
 BASEDIR="/home/intuitive/videos"
@@ -50,9 +50,9 @@ mv ${BASEDIR}/*.meta1 ${BASEDIR}/final/
 mv ${BASEDIR}/*.meta2 ${BASEDIR}/final/
 mv ${BASEDIR}/*.meta3 ${BASEDIR}/final/
 mv ${BASEDIR}/*.meta4 ${BASEDIR}/final/
-mv ${BASEDIR}/*.mp4 ${BASEDIR}/final/
+cp ${BASEDIR}/*.mp4 ${BASEDIR}/final/
 
-# Step 6: Generate sort file to store delimited values from MP4 files
+# Step 6: Generate temporary files to store delimited values from MP4 files
 for w in `find ${BASEDIR}/final/*.meta1 -type f`; do a=$(cat $w); echo -n "\"$a\"|" >> ${BASEDIR}/final/filelist1.sort; done;
 echo "" >> ${BASEDIR}/final/filelist1.sort;
 for x in `find ${BASEDIR}/final/*.meta2 -type f`; do b=$(cat $x); echo -n "\"$b\"|" >> ${BASEDIR}/final/filelist1.sort; done;
@@ -65,11 +65,11 @@ for z in `find ${BASEDIR}/final/*.meta4 -type f`; do d=$(cat $z); echo -n "\"$d\
 vidcount=$(ls -l ${BASEDIR}/final/*.mp4 | grep -v ^l | wc -l)
 for v in $(seq 1 $vidcount); do cut -d "|" -f $v ${BASEDIR}/final/filelist1.sort | tr '\n' ',' >> ${BASEDIR}/final/filelistpre1.csv; echo "" >> ${BASEDIR}/final/filelistpre1.csv; done
 
-# FIX: Remove any commas from end of lines
+# FIX: Remove leftover commas from end of lines
 cat ${BASEDIR}/final/filelistpre1.csv | sed 's/[,^t]*$//' > ${BASEDIR}/final/filelist.csv
 
 # Step 8: Create dummy metafiles for remaining (non-mp4) files
-for dd in `find ${BASEDIR}/*.* -type f \( ! -path '*/final/*' ! -path '*/processed/*' ! -path '*/@eaDir/*' ! -path '*/.DS_Store/*' ! -path '*/*.meta1A*' ! -path '*/*.meta2A*' ! -path '*/*.meta3A*' ! -path '*/*.meta4A*' \)`; do echo $dd | sed 's!/home/intuitive/trash/!!' > "${dd%}.meta1A"; touch "${dd%}.meta2A"; touch "${dd%}.meta3A"; touch "${dd%}.meta4A"; done;
+for dd in `find ${BASEDIR}/*.* -type f \( ! -path '*.mp4' ! -path '*/final/*' ! -path '*/processed/*' ! -path '*/@eaDir/*' ! -path '*/.DS_Store/*' ! -path '*/*.meta1A*' ! -path '*/*.meta2A*' ! -path '*/*.meta3A*' ! -path '*/*.meta4A*' \)`; do echo $dd | sed 's!/home/intuitive/trash/!!' > "${dd%}.meta1A"; touch "${dd%}.meta2A"; touch "${dd%}.meta3A"; touch "${dd%}.meta4A"; done;
 
 mv ${BASEDIR}/*.meta1A ${BASEDIR}/final/
 mv ${BASEDIR}/*.meta2A ${BASEDIR}/final/
@@ -107,8 +107,8 @@ rm ${BASEDIR}/final/filelist2.sort
 rm ${BASEDIR}/final/filelistpre1.csv
 rm ${BASEDIR}/final/filelistpre2.csv
 
-# Step 11: Move remaining files to final folder
-mv ${BASEDIR}/*.* ${BASEDIR}/final/
+# Step 11: Copy remaining files to final folder
+cp ${BASEDIR}/*.* ${BASEDIR}/final/
 
 # Step 12: Generate two filelists for diagnostic purposes
 vidcount=$(ls -l ${BASEDIR}/final/*.mp4 | grep -v ^l | wc -l)
@@ -124,3 +124,5 @@ echo "-----------------------------------------------" >> ${BASEDIR}/final/human
 
 # TODO
 # Implement file lock check using 'lsof -t ' to ensure that video files can safely be moved (not used by SMB or AFP processes)
+
+echo "Script execution time: " $SECONDS" seconds."

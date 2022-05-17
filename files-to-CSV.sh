@@ -24,8 +24,8 @@ for filerename in ${BASEDIR}/*.*; do
 done
 
 # Step 2: Remove old CSV and diagnostic file to prevent duplicate entries from previous script run
-rm ${FINALDIR}/filelist.csv
-rm ${FINALDIR}/humanlist.txt
+rm ${BASEDIR}/final/filelist.csv
+rm ${BASEDIR}/final/humanlist.txt
 
 # Step 3: Create required directories
 mkdir ${BASEDIR}/final/
@@ -39,7 +39,7 @@ for k in ${BASEDIR}/*.flv; do ffmpeg -y -i "$k" -f ffmetadata "${k%.*}.dat" -mov
 for k in ${BASEDIR}/*.wmv; do ffmpeg -y -i "$k" -f ffmetadata "${k%.*}.dat" -movflags +faststart "${k%.*}"; rm "$k"; done
 for k in ${BASEDIR}/*.m4v; do ffmpeg -y -i "$k" -f ffmetadata "${k%.*}.dat" -movflags +faststart "${k%.*}"; rm "$k"; done
 
-# Step 5: Extract relevant fields from raw ffmpeg metadata output
+# Step 5: Extract metadata: filename, title, comment, modified date
 for d in `find ${BASEDIR}/*.mp4 -type f \( ! -path '*/final/*' ! -path '*/processed/*' ! -path '*/@eaDir/*' ! -path '*/.DS_Store/*' \)`; do echo $d | sed 's!/home/intuitive/trash/!!' > "${d%}.meta1"; done;
 for e in `find ${BASEDIR}/*.dat -type f \( ! -path '*/final/*' ! -path '*/processed/*' ! -path '*/@eaDir/*' ! -path '*/.DS_Store/*' \)`; do awk '/title=/ {print; count++; if (count=1) exit}' $e | sed 's!title=!!' > "${e%}.meta2"; done
 for f in `find ${BASEDIR}/*.dat -type f \( ! -path '*/final/*' ! -path '*/processed/*' ! -path '*/@eaDir/*' ! -path '*/.DS_Store/*' \)`; do awk '/comment=/ {print; count++; if (count=1) exit}' $f | sed 's!comment=!!' > "${f%}.meta3"; done
@@ -66,7 +66,10 @@ vidcount=$(ls -l ${BASEDIR}/final/*.mp4 | grep -v ^l | wc -l)
 for v in $(seq 1 $vidcount); do cut -d "|" -f $v ${BASEDIR}/final/filelist1.sort | tr '\n' ',' >> ${BASEDIR}/final/filelistpre1.csv; echo "" >> ${BASEDIR}/final/filelistpre1.csv; done
 
 # FIX: Remove leftover commas from end of lines
-cat ${BASEDIR}/final/filelistpre1.csv | sed 's/[,^t]*$//' > ${BASEDIR}/final/filelist.csv
+sed -i 's/[,^t]*$//' ${BASEDIR}/final/filelistpre1.csv
+
+# Copy the temporary CSV into a new file
+cp ${BASEDIR}/final/filelistpre1.csv ${BASEDIR}/final/filelist.csv
 
 # Step 8: Create dummy metafiles for remaining (non-mp4) files
 for dd in `find ${BASEDIR}/*.* -type f \( ! -path '*.mp4' ! -path '*/final/*' ! -path '*/processed/*' ! -path '*/@eaDir/*' ! -path '*/.DS_Store/*' ! -path '*/*.meta1A*' ! -path '*/*.meta2A*' ! -path '*/*.meta3A*' ! -path '*/*.meta4A*' \)`; do echo $dd | sed 's!/home/intuitive/trash/!!' > "${dd%}.meta1A"; touch "${dd%}.meta2A"; touch "${dd%}.meta3A"; touch "${dd%}.meta4A"; done;
@@ -113,13 +116,13 @@ cp ${BASEDIR}/*.* ${BASEDIR}/final/
 # Step 12: Generate two filelists for diagnostic purposes
 vidcount=$(ls -l ${BASEDIR}/final/*.mp4 | grep -v ^l | wc -l)
 totalcount=$(ls -l ${BASEDIR}/final/*.* | grep -v ^l | wc -l)
-find ${BASEDIR}/final/*.* -type f | sed 's!${BASEDIR}/final!!' > ${BASEDIR}/final/humanlist.txt
-find ${BASEDIR}/final/*.mp4 -type f | sed 's!${BASEDIR}/final!!' > ${BASEDIR}/final/filelist.txt
+find ${BASEDIR}/final/*.* -type f | sed 's!${BASEDIR}/final!!' > ${BASEDIR}/final/filelist.txt
 echo "-----------------------------------------------" >> ${BASEDIR}/final/humanlist.txt
 echo "*** CSV FILE:" `date "+%Y/%m/%d %H:%M:%S" -r ${BASEDIR}/final/filelist.csv` >> ${BASEDIR}/final/humanlist.txt
 echo "*** THISFILE:" `date "+%Y/%m/%d %H:%M:%S"` >> ${BASEDIR}/final/humanlist.txt
-echo "*** MP4COUNT:" $vidcount >> ${BASEDIR}/final/humanlist.txt
-echo "*** TOTALCOUNT:" $totalcount >> ${BASEDIR}/final/humanlist.txt
+echo "*** PROCESSED MP4:" $vidcount >> ${BASEDIR}/final/humanlist.txt
+echo "*** TOTAL FILES:" $totalcount >> ${BASEDIR}/final/humanlist.txt
+echo "*** EXECUTION TIME:" $SECONDS" seconds" >> ${BASEDIR}/final/humanlist.txt
 echo "-----------------------------------------------" >> ${BASEDIR}/final/humanlist.txt
 
 # TODO
